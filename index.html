@@ -193,7 +193,10 @@ async function finalizar() {
 
   const res = await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({ linha })
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ linha: Number(linha) })
   });
 
   const resposta = await res.text();
@@ -203,7 +206,12 @@ async function finalizar() {
     return;
   }
 
-  alert("Produção atualizada!");
+  if (resposta !== "OK") {
+    alert("Erro ao atualizar: " + resposta);
+    return;
+  }
+
+  alert("Produção atualizada com sucesso!");
   carregarDados();
 }
 
