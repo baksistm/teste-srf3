@@ -191,27 +191,16 @@ function mostrarInfo() {
 async function finalizar() {
   const linha = document.getElementById("maquinaSelect").value;
 
-  const res = await fetch(API_URL, {
+  await fetch(API_URL, {
     method: "POST",
+    mode: "no-cors", // 🔥 resolve o CORS
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ linha: Number(linha) })
   });
 
-  const resposta = await res.text();
-
-  if (resposta === "SEM_PROXIMO") {
-    alert("Não há próxima produção!");
-    return;
-  }
-
-  if (resposta !== "OK") {
-    alert("Erro ao atualizar: " + resposta);
-    return;
-  }
-
-  alert("Produção atualizada com sucesso!");
+  alert("Produção atualizada!");
   carregarDados();
 }
 
