@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Produção</title>
+
+<style>
+:root {
+  --cor-principal: #076091;
+  --cor-secundaria: #0a7bb8;
+  --branco: #ffffff;
+  --cinza: #f4f6f8;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #076091, #0a7bb8);
+  color: var(--branco);
+}
+
+/* HEADER */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 20px;
+}
+
+header img {
+  width: 60px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+/* CONTAINER */
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* CARD */
+.card {
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 25px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  margin-top: 20px;
+}
+
+/* SELECT */
+select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+/* BOTÕES */
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 12px;
+  background: var(--branco);
+  color: var(--cor-principal);
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  transform: scale(1.03);
+  background: #e6e6e6;
+}
+
+/* STATUS */
+.status {
+  background: rgba(255,255,255,0.15);
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 15px;
+}
+
+.status p {
+  margin: 5px 0;
+}
+
+.titulo {
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* RESPONSIVO */
+@media (max-width: 600px) {
+  header h1 {
+    font-size: 18px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <img src="logo.png">
+  <h1>Controle de Produção</h1>
+</header>
+
+<div class="container">
+
+  <button onclick="abrirPlanilha()">📄 Ver Planilha</button>
+
+  <div class="card">
+    <h2>Selecionar Máquina</h2>
+
+    <select id="maquinaSelect"></select>
+
+    <div id="info" class="status"></div>
+
+    <button onclick="finalizar()">✅ Finalizar Produção</button>
+  </div>
+
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbx7pigLp4AQbgRs7Qy_LNZnj_4NRmtuO81Gk8WpRHeaV-ZIKNTzIv_R5J7osQycoeruww/exec";
+const PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1C2kpN4iAKKIUg0_1oVAsmMRWFSHg4-6t6DdHm1OrDoM/edit?usp=sharing";
+
+let dados = [];
+
+// Abrir planilha
+function abrirPlanilha() {
+  window.open(PLANILHA_URL, "_blank");
+}
+
+// Carregar dados
+async function carregarDados() {
+  const res = await fetch(API_URL);
+  dados = await res.json();
+
+  const select = document.getElementById("maquinaSelect");
+  select.innerHTML = "";
+
+  dados.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.linha;
+    option.textContent = "Tear " + item.maquina;
+    select.appendChild(option);
+  });
+
+  mostrarInfo();
+}
+
+// Mostrar info
+function mostrarInfo() {
+  const linha = document.getElementById("maquinaSelect").value;
+  const item = dados.find(d => d.linha == linha);
+
+  if (!item) return;
+
+  let html = `
+    <p class="titulo">🟢 Atual</p>
+    <p>${item.atual[0] || "-"} | ${item.atual[1] || "-"}</p>
+  `;
+
+  if (item.proximos.length > 0) {
+    html += `<p class="titulo">🟡 Próximos</p>`;
+    item.proximos.forEach((p, i) => {
+      html += `<p>${i + 1}º → ${p[0]} | ${p[1]}</p>`;
+    });
+  } else {
+    html += `<p>🔴 Sem próximas produções</p>`;
+  }
+
+  document.getElementById("info").innerHTML = html;
+}
+
+// Finalizar
+async function finalizar() {
+  const linha = document.getElementById("maquinaSelect").value;
+
+  const res = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ linha })
+  });
+
+  const resposta = await res.text();
+
+  if (resposta === "SEM_PROXIMO") {
+    alert("Não há próxima produção!");
+    return;
+  }
+
+  alert("Produção atualizada!");
+  carregarDados();
+}
+
+// Evento de troca
+document.getElementById("maquinaSelect").addEventListener("change", mostrarInfo);
+
+// Inicializar
+carregarDados();
+</script>
+
+</body>
+</html>
