@@ -6,72 +6,50 @@
 <title>Controle de Produção</title>
 
 <style>
-:root {
-  --cor: #076091;
-  --cor2: #0a7bb8;
-  --branco: #ffffff;
-}
-
 body {
   margin: 0;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: Arial;
   background: linear-gradient(135deg, #076091, #0a7bb8);
   color: white;
 }
 
 header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
+  text-align: center;
   padding: 20px;
 }
 
 header img {
-  width: 60px;
+  width: 70px;
 }
 
 .container {
-  max-width: 800px;
+  max-width: 600px;
   margin: auto;
   padding: 20px;
 }
 
 .card {
   background: rgba(255,255,255,0.1);
-  border-radius: 20px;
-  padding: 25px;
-  backdrop-filter: blur(10px);
-  margin-top: 20px;
+  padding: 20px;
+  border-radius: 15px;
 }
 
 select, button {
   width: 100%;
   padding: 12px;
+  margin-top: 10px;
   border-radius: 10px;
   border: none;
-  margin-top: 10px;
-  font-size: 16px;
 }
 
 button {
   background: white;
   color: #076091;
   font-weight: bold;
-  cursor: pointer;
 }
 
-button:hover {
-  opacity: 0.9;
-}
-
-.status {
+.info {
   margin-top: 15px;
-}
-
-.titulo {
-  font-weight: bold;
-  margin-top: 10px;
 }
 </style>
 </head>
@@ -85,88 +63,85 @@ button:hover {
 
 <div class="container">
 
-  <button onclick="abrirPlanilha()">📄 Ver Planilha</button>
+
 
   <div class="card">
-    <h3>Selecionar Máquina</h3>
+    <div id="maquina">
+      <button href="https://docs.google.com/spreadsheets/d/1C2kpN4iAKKIUg0_1oVAsmMRWFSHg4-6t6DdHm1OrDoM/edit?usp=sharing">Acessar planilha</button>
+    </div>
+  </div>
+  
+  <div class="card">
+    <select id="maquina"></select>
 
-    <select id="maquinaSelect"></select>
+    <div id="info" class="info"></div>
 
-    <div id="info" class="status"></div>
-
-    <button onclick="finalizar()">✅ Finalizar Produção</button>
+    <button onclick="finalizar()">Finalizar Produção</button>
   </div>
 
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwX_lYZGNphFRb9wllLDcaX5T-pgqyVjCPg5irdStsRezonNTJbbQLFPSDOe2-C_tWMCA/exec";
-const PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1C2kpN4iAKKIUg0_1oVAsmMRWFSHg4-6t6DdHm1OrDoM/edit?usp=sharing";
+const API = "https://script.google.com/macros/s/AKfycbzgjRKkKyWhUx060loEjkuEFJlS9wMtALaV9lwiN0EXiIs7JbMdosVE7jB7sCE0sGRLfg/exec";
 
 let dados = [];
 
-function abrirPlanilha() {
-  window.open(PLANILHA_URL, "_blank");
-}
-
-async function carregarDados() {
-  const res = await fetch(API_URL);
+async function carregar() {
+  const res = await fetch(API);
   dados = await res.json();
 
-  const select = document.getElementById("maquinaSelect");
+  const select = document.getElementById("maquina");
   select.innerHTML = "";
 
-  dados.forEach(item => {
-    const option = document.createElement("option");
-    option.value = item.linha;
-    option.textContent = "Tear " + item.maquina;
-    select.appendChild(option);
+  dados.forEach(d => {
+    const op = document.createElement("option");
+    op.value = d.linha;
+    op.textContent = "Tear " + d.maquina;
+    select.appendChild(op);
   });
 
-  mostrarInfo();
+  mostrar();
 }
 
-function mostrarInfo() {
-  const linha = document.getElementById("maquinaSelect").value;
+function mostrar() {
+  const linha = document.getElementById("maquina").value;
   const item = dados.find(d => d.linha == linha);
 
   if (!item) return;
 
   let html = `
-    <p class="titulo">Atual:</p>
-    <p>${item.atual[0] || "-"} | ${item.atual[1] || "-"}</p>
+    <p><b>Atual:</b> ${item.atual1 || "-"} | ${item.atual2 || "-"}</p>
   `;
 
   if (item.proximos.length > 0) {
-    html += `<p class="titulo">Próximos:</p>`;
     item.proximos.forEach((p, i) => {
-      html += `<p>${i + 1}º → ${p[0]} | ${p[1]}</p>`;
+      html += `<p>Próx ${i+1}: ${p[0]} | ${p[1]}</p>`;
     });
   } else {
-    html += `<p>Sem próximas produções</p>`;
+    html += `<p>Sem próximos</p>`;
   }
 
   document.getElementById("info").innerHTML = html;
 }
 
 async function finalizar() {
-  const linha = document.getElementById("maquinaSelect").value;
+  const linha = document.getElementById("maquina").value;
 
-  const res = await fetch(`${API_URL}?linha=${linha}`);
-  const resposta = await res.text();
+  const res = await fetch(API + "?linha=" + linha);
+  const txt = await res.text();
 
-  if (resposta === "SEM_PROXIMO") {
-    alert("Não há próxima produção!");
+  if (txt === "SEM_PROXIMO") {
+    alert("Sem próxima produção");
     return;
   }
 
-  alert("Produção atualizada!");
-  carregarDados();
+  alert("Atualizado!");
+  carregar();
 }
 
-document.getElementById("maquinaSelect").addEventListener("change", mostrarInfo);
+document.getElementById("maquina").addEventListener("change", mostrar);
 
-carregarDados();
+carregar();
 </script>
 
 </body>
