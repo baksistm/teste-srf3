@@ -161,6 +161,98 @@ async function carregarSessao() {
 
 /* INIT */
 carregarSessao();
+
+const API = "https://script.google.com/macros/s/AKfycbzgjRKkKyWhUx060loEjkuEFJlS9wMtALaV9lwiN0EXiIs7JbMdosVE7jB7sCE0sGRLfg/exec";
+
+let dados = [];
+let maquinaAtual = null;
+
+/* TROCAR TELA */
+function tela(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+/* CARREGAR MÁQUINAS */
+async function carregar() {
+  const res = await fetch(API);
+  dados = await res.json();
+
+  const div = document.getElementById("listaMaquinas");
+  div.innerHTML = "";
+
+  dados.forEach(d => {
+    const el = document.createElement("div");
+    el.className = "maquina";
+    el.innerText = d.maquina;
+    el.onclick = () => acessar(d);
+    div.appendChild(el);
+  });
+}
+
+/* ACESSAR MÁQUINA */
+function acessar(d) {
+  maquinaAtual = d;
+
+  tela("loading");
+  document.getElementById("textoLoading").innerText =
+    "Acessando produção do tear " + d.maquina;
+
+  setTimeout(() => {
+    mostrarDados();
+    tela("producao");
+  }, 3000);
+}
+
+/* MOSTRAR DADOS */
+function mostrarDados() {
+  document.getElementById("titulo").innerText =
+    "Tear " + maquinaAtual.maquina;
+
+  let html = `
+    <b>Atual:</b><br>
+    ${maquinaAtual.atual1 || "-"} | ${maquinaAtual.atual2 || "-"}<br><br>
+  `;
+
+  maquinaAtual.proximos.forEach((p, i) => {
+    html += `Próximo ${i+1}: ${p[0]} | ${p[1]}<br>`;
+  });
+
+  document.getElementById("dados").innerHTML = html;
+}
+
+/* FINALIZAR */
+async function finalizar() {
+  tela("loading");
+  document.getElementById("textoLoading").innerText =
+    "Aguarde, atualizando...";
+
+  const res = await fetch(API + "?linha=" + maquinaAtual.linha);
+  const txt = await res.text();
+
+  tela("producao");
+
+  const fb = document.getElementById("feedback");
+  fb.style.display = "block";
+
+  if (txt === "OK") {
+    fb.className = "feedback sucesso";
+    fb.innerText = "Produção atualizada com sucesso!";
+  } else {
+    fb.className = "feedback erro";
+    fb.innerText = "Erro ao atualizar!";
+  }
+
+  // voltar pro painel depois
+  setTimeout(() => {
+    fb.style.display = "none";
+    tela("painel");
+    carregar();
+  }, 2500);
+}
+
+/* INIT */
+carregar();
 </script>
 
 </body>
