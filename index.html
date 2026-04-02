@@ -111,30 +111,41 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* LOGIN COM USUÁRIO */
-async function entrar() {
-  const usuario = document.getElementById("usuario").value;
-  const senha = document.getElementById("senha").value;
+async function entrar() {async function entrar() {
+  const usuario = document.getElementById("usuario").value.trim();
+  const senha = document.getElementById("senha").value.trim();
   const erro = document.getElementById("erro");
 
   erro.innerText = "";
 
-  // 🔎 Buscar email pelo usuário
+  console.log("Tentando login com usuário:", usuario);
+
+  // 🔎 Buscar email
   const { data, error } = await supabaseClient
     .from("usuarios")
     .select("email")
     .eq("usuario", usuario)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  console.log("Resposta busca:", data, error);
+
+  if (error) {
+    erro.innerText = "Erro ao acessar banco";
+    return;
+  }
+
+  if (!data) {
     erro.innerText = "Usuário não encontrado";
     return;
   }
 
-  // 🔐 Login com email (oculto)
+  // 🔐 Login
   const { error: loginError } = await supabaseClient.auth.signInWithPassword({
     email: data.email,
     password: senha
   });
+
+  console.log("Login:", loginError);
 
   if (loginError) {
     erro.innerText = "Senha incorreta";
