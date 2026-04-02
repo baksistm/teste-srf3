@@ -7,20 +7,18 @@
 
 <style>
 :root {
-  --cor-principal: #076091;
-  --cor-secundaria: #0a7bb8;
+  --cor: #076091;
+  --cor2: #0a7bb8;
   --branco: #ffffff;
-  --cinza: #f4f6f8;
 }
 
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
   background: linear-gradient(135deg, #076091, #0a7bb8);
-  color: var(--branco);
+  color: white;
 }
 
-/* HEADER */
 header {
   display: flex;
   align-items: center;
@@ -33,30 +31,21 @@ header img {
   width: 60px;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 24px;
-}
-
-/* CONTAINER */
 .container {
-  max-width: 900px;
+  max-width: 800px;
   margin: auto;
   padding: 20px;
 }
 
-/* CARD */
 .card {
   background: rgba(255,255,255,0.1);
   border-radius: 20px;
   padding: 25px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  backdrop-filter: blur(10px);
   margin-top: 20px;
 }
 
-/* SELECT */
-select {
+select, button {
   width: 100%;
   padding: 12px;
   border-radius: 10px;
@@ -65,48 +54,24 @@ select {
   font-size: 16px;
 }
 
-/* BOTÕES */
 button {
-  width: 100%;
-  padding: 14px;
-  margin-top: 15px;
-  border: none;
-  border-radius: 12px;
-  background: var(--branco);
-  color: var(--cor-principal);
+  background: white;
+  color: #076091;
   font-weight: bold;
-  font-size: 16px;
   cursor: pointer;
-  transition: 0.3s;
 }
 
 button:hover {
-  transform: scale(1.03);
-  background: #e6e6e6;
+  opacity: 0.9;
 }
 
-/* STATUS */
 .status {
-  background: rgba(255,255,255,0.15);
-  padding: 15px;
-  border-radius: 12px;
   margin-top: 15px;
-}
-
-.status p {
-  margin: 5px 0;
 }
 
 .titulo {
   font-weight: bold;
   margin-top: 10px;
-}
-
-/* RESPONSIVO */
-@media (max-width: 600px) {
-  header h1 {
-    font-size: 18px;
-  }
 }
 </style>
 </head>
@@ -115,7 +80,7 @@ button:hover {
 
 <header>
   <img src="logo.png">
-  <h1>Controle de Produção</h1>
+  <h2>Controle de Produção</h2>
 </header>
 
 <div class="container">
@@ -123,7 +88,7 @@ button:hover {
   <button onclick="abrirPlanilha()">📄 Ver Planilha</button>
 
   <div class="card">
-    <h2>Selecionar Máquina</h2>
+    <h3>Selecionar Máquina</h3>
 
     <select id="maquinaSelect"></select>
 
@@ -135,17 +100,15 @@ button:hover {
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbw0iy9_MO0Y87M74xcA2RvZY2MZ6c7WS2-NCUVQEdBYkPB9heloNN4TwkvsHUozTwixDA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwX_lYZGNphFRb9wllLDcaX5T-pgqyVjCPg5irdStsRezonNTJbbQLFPSDOe2-C_tWMCA/exec";
 const PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1C2kpN4iAKKIUg0_1oVAsmMRWFSHg4-6t6DdHm1OrDoM/edit?usp=sharing";
 
 let dados = [];
 
-// Abrir planilha
 function abrirPlanilha() {
   window.open(PLANILHA_URL, "_blank");
 }
 
-// Carregar dados
 async function carregarDados() {
   const res = await fetch(API_URL);
   dados = await res.json();
@@ -163,7 +126,6 @@ async function carregarDados() {
   mostrarInfo();
 }
 
-// Mostrar info
 function mostrarInfo() {
   const linha = document.getElementById("maquinaSelect").value;
   const item = dados.find(d => d.linha == linha);
@@ -171,43 +133,39 @@ function mostrarInfo() {
   if (!item) return;
 
   let html = `
-    <p class="titulo">🟢 Atual</p>
+    <p class="titulo">Atual:</p>
     <p>${item.atual[0] || "-"} | ${item.atual[1] || "-"}</p>
   `;
 
   if (item.proximos.length > 0) {
-    html += `<p class="titulo">🟡 Próximos</p>`;
+    html += `<p class="titulo">Próximos:</p>`;
     item.proximos.forEach((p, i) => {
       html += `<p>${i + 1}º → ${p[0]} | ${p[1]}</p>`;
     });
   } else {
-    html += `<p>🔴 Sem próximas produções</p>`;
+    html += `<p>Sem próximas produções</p>`;
   }
 
   document.getElementById("info").innerHTML = html;
 }
 
-// Finalizar
 async function finalizar() {
   const linha = document.getElementById("maquinaSelect").value;
 
-  await fetch(API_URL, {
-    method: "POST",
-    mode: "no-cors", // 🔥 resolve o CORS
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ linha: Number(linha) })
-  });
+  const res = await fetch(`${API_URL}?linha=${linha}`);
+  const resposta = await res.text();
+
+  if (resposta === "SEM_PROXIMO") {
+    alert("Não há próxima produção!");
+    return;
+  }
 
   alert("Produção atualizada!");
   carregarDados();
 }
 
-// Evento de troca
 document.getElementById("maquinaSelect").addEventListener("change", mostrarInfo);
 
-// Inicializar
 carregarDados();
 </script>
 
